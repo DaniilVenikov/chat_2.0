@@ -1,6 +1,4 @@
-package cinfiguration;
-
-import configuration.exception.ConfigurationNotFoundException;
+package configuration;
 
 import java.io.File;
 import java.io.FileNotFoundException;

@@ -1,4 +1,4 @@
-package cinfiguration;
+package configuration;
 
 public class ServerConfigurationEntity implements ServerConfiguration{
     private int port;

@@ -1,4 +1,4 @@
-package cinfiguration;
+package configuration;
 
 public interface ServerConfiguration {
     int getPort();

@@ -1,59 +1,65 @@
 package client;
 
-import cinfiguration.FileSystemServerConfigurator;
-import cinfiguration.ServerConfiguration;
-import cinfiguration.ServerConfigurator;
+import configuration.FileSystemServerConfigurator;
+import configuration.ServerConfiguration;
+import configuration.ServerConfigurator;
+import messagapi.Message;
+import messagapi.MessageDto;
+import messagapi.MessageSender;
 
 import java.io.*;
 import java.net.Socket;
 import java.net.URI;
-import java.time.LocalDateTime;
-import java.util.Calendar;
+import java.sql.Timestamp;
 import java.util.Scanner;
 
-public class Client implements Runnable{
+public class Client{
 
-    private PrintWriter out;
-    private BufferedReader in;
-    private String nick;
-
-    public Client(Socket socket) throws IOException {
-        out = new PrintWriter(socket.getOutputStream(), true);
-        in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-    }
-
-    @Override
-    public void run(){
-//        String host = readConfiguration().getHost();
-//        int port = readConfiguration().getPort();
+    public static void main(String[] args) {
+        Socket clientSocket = null;
+        MessageSender serverMessageSender = null;
         Scanner scanner = new Scanner(System.in);
+        String host = readConfiguration().getHost();
+        int port = readConfiguration().getPort();
+        try {
+            clientSocket = new Socket(host, port);
+            serverMessageSender = new ServerMessageSender(clientSocket);
+        } catch (IOException e){
+            e.printStackTrace();
+        }
 
-        System.out.println("Введите свой никнейм:");
-        nick = scanner.nextLine();
+        System.out.println("Введите ваш ник");
+        String nick = scanner.nextLine();
         System.out.println("Идёт подключение к чату (для выхода из чата введите \"exit\")");
 
-        while (true) {
+        while (true){
             try {
-                System.out.println(nick + ": ");
-                String message = scanner.nextLine();
+                assert clientSocket != null;
+                try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))){
 
-                if (message.equals("exit")) {
-                    out.println(nick + " - " + Calendar.getInstance().getTime() + ": " + "Пользователь покинул чат");
+                    System.out.println(nick + ": ");
+                    String text = scanner.nextLine();
+
+                    Message receivedMessage = new MessageDto();
+
+                    if(text.equals("exit")){
+                        receivedMessage.setClientNick(nick);
+                        receivedMessage.setMessageTimestamp(new Timestamp(System.currentTimeMillis()));
+                        receivedMessage.setMessage("Пользователь покинул чат");
+                        serverMessageSender.sendMessage(receivedMessage);
+                        writeClientInLog(in.readLine());
+                        break;
+                    }
+
+                    receivedMessage.setClientNick(nick);
+                    receivedMessage.setMessageTimestamp(new Timestamp(System.currentTimeMillis()));
+                    receivedMessage.setMessage(text);
+
+                    serverMessageSender.sendMessage(receivedMessage);
                     writeClientInLog(in.readLine());
-                    break;
-                }
 
-                out.println(nick + " - " + Calendar.getInstance().getTime() + ": " + message);
-                writeClientInLog(nick + " - " + Calendar.getInstance().getTime() + ": " + message);
-
-                int c = in.read();
-                if (c > -1) {
-                    System.out.println("reading...");
-                    String ms = (char) c + in.readLine();
-                    writeClientInLog(ms);
-                    System.out.println(ms);
                 }
-            } catch (IOException e) {
+            } catch (IOException e){
                 e.printStackTrace();
             }
         }
@@ -68,14 +74,6 @@ public class Client implements Runnable{
         } catch(IOException e){
             e.printStackTrace();
         }
-    }
-
-    public void getMessage(String message, String nick){
-        out.println(nick + " - " + Calendar.getInstance().getTime() + ": " + message);
-    }
-
-    public String getNick(){
-        return nick;
     }
 
     private static ServerConfiguration readConfiguration(){

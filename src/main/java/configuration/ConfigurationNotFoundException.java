@@ -1,4 +1,4 @@
-package configuration.exception;
+package configuration;
 
 public class ConfigurationNotFoundException extends RuntimeException{
     public ConfigurationNotFoundException() {

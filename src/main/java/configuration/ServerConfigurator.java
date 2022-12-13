@@ -1,4 +1,4 @@
-package cinfiguration;
+package configuration;
 
 import java.net.URI;
 
